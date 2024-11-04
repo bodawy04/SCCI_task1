@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:testing/task_model.dart';
+import 'package:testing/to_do_notifier.dart';
 
-class ToDoList extends StatefulWidget {
+import 'task_model.dart';
+
+class ToDoList extends ConsumerStatefulWidget {
   const ToDoList({super.key});
 
   @override
-  State<ToDoList> createState() => _ToDoList();
+  ConsumerState<ToDoList> createState() => _ToDoList();
 }
 
-class _ToDoList extends State<ToDoList> {
+class _ToDoList extends ConsumerState<ToDoList> {
   List<TaskModel> tasksList = [];
   SharedPreferences? sharedPreferences;
 
@@ -36,8 +39,9 @@ class _ToDoList extends State<ToDoList> {
 
   @override
   Widget build(BuildContext context) {
+    final task = ref.watch(toDoNotifierProvider);
+    print(task.length);
     return Scaffold(
-      // backgroundColor:const Color.fromARGB(255, 115, 83, 118) ,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -61,14 +65,14 @@ class _ToDoList extends State<ToDoList> {
                       topLeft: Radius.circular(12),
                       topRight: Radius.circular(12)),
                   color: Colors.white),
-              child: tasksList.isNotEmpty
+              child: task.isNotEmpty
                   ? ListView.builder(
                       shrinkWrap: true,
                       padding: const EdgeInsets.all(0),
-                      itemCount: tasksList.length,
+                      itemCount: task.length,
                       itemBuilder: (context, index) {
-                        final TaskModel task = tasksList[index];
-                        if (showCompletedTasks && !task.isCompelted) {
+                        // final TaskModel task = tasksList[index];
+                        if (showCompletedTasks && !task[index].isCompelted) {
                           return Container();
                         }
                         return Card(
@@ -78,22 +82,23 @@ class _ToDoList extends State<ToDoList> {
                               borderRadius: BorderRadius.circular(12)),
                           child: ListTile(
                             leading: Checkbox(
-                              value: task.isCompelted,
+                              value: task[index].isCompelted,
                               onChanged: (isChecked) {
                                 final updatedTask = TaskModel(
-                                  id: task.id,
-                                  title: task.title,
-                                  isCompelted: isChecked!,
+                                  id: task[index].id,
+                                  title: task[index].title,
+                                  isCompelted: !task[index].isCompelted,
                                 );
-                                updateTask(
-                                    taskId: task.id, updatedTask: updatedTask);
+                                ref
+                                    .read(toDoNotifierProvider.notifier)
+                                    .update(task[index].id, updatedTask);
                               },
                             ),
                             title: Text(
-                              task.title,
+                              task[index].title,
                               style: TextStyle(
                                 fontSize: 18,
-                                decoration: task.isCompelted
+                                decoration: task[index].isCompelted
                                     ? TextDecoration.lineThrough
                                     : TextDecoration.none,
                               ),
@@ -104,11 +109,13 @@ class _ToDoList extends State<ToDoList> {
                                 color: Colors.red,
                               ),
                               onPressed: () {
-                                deleteTask(taskId: task.id);
+                                ref
+                                    .read(toDoNotifierProvider.notifier)
+                                    .delete(task[index].id);
                               },
                             ),
                             onTap: () {
-                              showUpdateDialog(task: task);
+                              showUpdateDialog(task[index]);
                             },
                           ),
                         );
@@ -128,7 +135,6 @@ class _ToDoList extends State<ToDoList> {
           ),
         ],
       ),
-
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.deepPurple,
         onPressed: showDialogButton,
@@ -141,49 +147,47 @@ class _ToDoList extends State<ToDoList> {
     );
   }
 
-  void showUpdateDialog({required TaskModel task}) {
+  void showUpdateDialog(TaskModel task) {
     final TextEditingController updateTextController =
         TextEditingController(text: task.title);
-
     showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Update Task'),
-          content: TextField(
-            controller: updateTextController,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(15),
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Update Task'),
+            content: TextField(
+              controller: updateTextController,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                labelText: 'Update Task...',
               ),
-              labelText: 'Update Task...',
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                if (updateTextController.text.isNotEmpty) {
-                  final updatedTask = TaskModel(
-                    id: task.id,
-                    title: updateTextController.text,
-                    isCompelted: task.isCompelted,
-                  );
-                  updateTask(taskId: task.id, updatedTask: updatedTask);
-                  Navigator.of(context).pop();
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
-    );
+            actions: [
+              TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Cancel')),
+              TextButton(
+                  onPressed: () {
+                    if (updateTextController.text.isNotEmpty) {
+                      final updatedTask = TaskModel(
+                        id: task.id,
+                        title: updateTextController.text,
+                        isCompelted: task.isCompelted,
+                      );
+                      Navigator.of(context).pop();
+                      ref
+                          .read(toDoNotifierProvider.notifier)
+                          .update(task.id, updatedTask);
+                    }
+                  },
+                  child: const Text('Update'))
+            ],
+          );
+        });
   }
 
   void showDialogButton() {
@@ -214,7 +218,7 @@ class _ToDoList extends State<ToDoList> {
                           id: DateTime.now().toString(),
                           title: taskTextEditingController.text,
                           isCompelted: false);
-                      createTask(task: newTask);
+                      ref.read(toDoNotifierProvider.notifier).add(newTask);
                       taskTextEditingController.clear();
                       //close the dialog
                       Navigator.of(context).pop();
@@ -226,30 +230,23 @@ class _ToDoList extends State<ToDoList> {
         });
   }
 
-  void createTask({required TaskModel task}) {
-    setState(() {
-      tasksList.add(task);
-      saveOnLocalStorage();
-    });
-  }
+  // void updateTask({required String taskId, required TaskModel updatedTask}) {
+  //   final taskIndex = tasksList.indexWhere((task) => task.id == taskId);
+  //   if (taskIndex != -1) {
+  //     setState(() {
+  //       tasksList[taskIndex] = updatedTask;
+  //       saveOnLocalStorage();
+  //     });
+  //   }
+  // }
 
-  void updateTask({required String taskId, required TaskModel updatedTask}) {
-    final taskIndex = tasksList.indexWhere((task) => task.id == taskId);
-    if (taskIndex != -1) {
-      setState(() {
-        tasksList[taskIndex] = updatedTask;
-        saveOnLocalStorage();
-      });
-    }
-  }
-
-  void deleteTask({required String taskId}) {
-    setState(() {
-      tasksList.removeWhere((task) => task.id == taskId);
-      saveOnLocalStorage();
-    });
-  }
-
+  // void deleteTask({required String taskId}) {
+  //   setState(() {
+  //     tasksList.removeWhere((task) => task.id == taskId);
+  //     saveOnLocalStorage();
+  //   });
+  // }
+  //
   void readTasks() {
     setState(() {
       final taskData = sharedPreferences?.getStringList('tasks') ?? [];
