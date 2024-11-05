@@ -26,7 +26,5 @@ class ToDoNotifier extends _$ToDoNotifier {
         ...state.sublist(taskIndex + 1),
       ];
     }
-    print("updated");
-    print(updatedTask.isCompelted);
   }
 }

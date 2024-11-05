@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'to_do_list_screen.dart';
 
@@ -16,9 +15,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: Colors.deepPurple, // Consistent theme
-        scaffoldBackgroundColor: Colors.deepPurple, // Lighter background
-        textTheme: GoogleFonts.poppinsTextTheme(), // Custom Font
+        primaryColor: Colors.deepPurple,
+        scaffoldBackgroundColor: Colors.deepPurple,
+        fontFamily: "Poppins",
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.deepPurple,
           centerTitle: true,
