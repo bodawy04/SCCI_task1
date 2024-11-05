@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:testing/to_do_notifier.dart';
 
 import 'task_model.dart';
@@ -13,7 +14,7 @@ class ToDoList extends ConsumerStatefulWidget {
 
 class _ToDoList extends ConsumerState<ToDoList> {
   List<TaskModel> tasksList = [];
-  // SharedPreferences? sharedPreferences;
+  SharedPreferences? sharedPreferences;
 
   bool showCompletedTasks = false;
 
@@ -22,18 +23,18 @@ class _ToDoList extends ConsumerState<ToDoList> {
 
   @override
   void initState() {
-    // initPrefs();
+    initPrefs();
     super.initState();
   }
 
-  // void initPrefs() async {
-  //   sharedPreferences = await SharedPreferences.getInstance();
-  //   readTasks();
-  // }
+  void initPrefs() async {
+    sharedPreferences = await SharedPreferences.getInstance();
+    readTasks();
+  }
 
   void saveOnLocalStorage() {
     final taskData = tasksList.map((task) => task.toJson()).toList();
-    // sharedPreferences?.setStringList('tasks', taskData);
+    sharedPreferences?.setStringList('tasks', taskData);
   }
 
   @override
@@ -136,9 +137,7 @@ class _ToDoList extends ConsumerState<ToDoList> {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.deepPurple,
-        onPressed: () {
-          print("ressss");
-        },
+        onPressed: showDialogButton,
         child: const Icon(
           Icons.add,
           size: 30,
@@ -249,14 +248,14 @@ class _ToDoList extends ConsumerState<ToDoList> {
   //   });
   // }
   //
-  // void readTasks() {
-  //   setState(() {
-  //     final taskData = sharedPreferences?.getStringList('tasks') ?? [];
-  //
-  //     tasksList =
-  //         taskData.map((taskJason) => TaskModel.fromJson(taskJason)).toList();
-  //   });
-  // }
+  void readTasks() {
+    setState(() {
+      final taskData = sharedPreferences?.getStringList('tasks') ?? [];
+
+      tasksList =
+          taskData.map((taskJason) => TaskModel.fromJson(taskJason)).toList();
+    });
+  }
 
   List<TaskModel> get displayedTasks {
     if (showCompletedTasks) {
