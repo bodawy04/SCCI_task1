@@ -46,9 +46,18 @@ class _ToDoList extends ConsumerState<ToDoList> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 80),
-          const Padding(
-            padding: EdgeInsets.only(left: 20),
-            child: Text(
+          TweenAnimationBuilder(
+            tween: Tween<double>(begin: 0, end: 1),
+            duration: const Duration(milliseconds: 700),
+            builder: (BuildContext context, double val, Widget? child) =>
+                Opacity(
+              opacity: val,
+              child: Padding(
+                padding: EdgeInsets.only(left: val * 30),
+                child: child,
+              ),
+            ),
+            child: const Text(
               "TO DO List",
               style: TextStyle(
                   fontSize: 32,
@@ -191,7 +200,6 @@ class _ToDoList extends ConsumerState<ToDoList> {
   }
 
   void showDialogButton() {
-    print("pressed");
     showDialog(
         context: context,
         builder: (context) {
