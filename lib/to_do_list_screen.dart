@@ -12,7 +12,8 @@ class ToDoList extends ConsumerStatefulWidget {
   ConsumerState<ToDoList> createState() => _ToDoList();
 }
 
-class _ToDoList extends ConsumerState<ToDoList> {
+class _ToDoList extends ConsumerState<ToDoList>
+    with SingleTickerProviderStateMixin {
   List<TaskModel> tasksList = [];
   SharedPreferences? sharedPreferences;
 
@@ -21,15 +22,31 @@ class _ToDoList extends ConsumerState<ToDoList> {
   final TextEditingController taskTextEditingController =
       TextEditingController();
 
+  late AnimationController animationController;
+  late Animation<Offset> slidingAnimation;
+
   @override
   void initState() {
     initPrefs();
+
+    animationController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 400));
+    slidingAnimation =
+        Tween<Offset>(begin: const Offset(-1, 0), end: const Offset(0, 0))
+            .animate(animationController);
+    animationController.forward();
     super.initState();
   }
 
   void initPrefs() async {
     sharedPreferences = await SharedPreferences.getInstance();
     readTasks();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    animationController.dispose();
   }
 
   void saveOnLocalStorage() {
@@ -48,21 +65,26 @@ class _ToDoList extends ConsumerState<ToDoList> {
           const SizedBox(height: 80),
           TweenAnimationBuilder(
             tween: Tween<double>(begin: 0, end: 1),
-            duration: const Duration(milliseconds: 700),
+            duration: const Duration(milliseconds: 500),
             builder: (BuildContext context, double val, Widget? child) =>
                 Opacity(
               opacity: val,
-              child: Padding(
-                padding: EdgeInsets.only(left: val * 30),
-                child: child,
+              child: AnimatedBuilder(
+                animation: slidingAnimation,
+                builder: (context, _) => SlideTransition(
+                  position: slidingAnimation,
+                  child: const Padding(
+                    padding: EdgeInsets.only(left: 20),
+                    child: Text(
+                      "TO DO List",
+                      style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white),
+                    ),
+                  ),
+                ),
               ),
-            ),
-            child: const Text(
-              "TO DO List",
-              style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white),
             ),
           ),
           const SizedBox(height: 30),
